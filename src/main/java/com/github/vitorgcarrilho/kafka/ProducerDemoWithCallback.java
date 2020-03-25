@@ -1,5 +1,6 @@
 package com.github.vitorgcarrilho.kafka;
 
+import com.github.vitorgcarrilho.service.SiteAccessInfoReader;
 import com.github.vitorgcarrilho.util.ApplicationPropertiesUtils;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -21,14 +22,30 @@ public class ProducerDemoWithCallback {
 
     private static Logger logger = LoggerFactory.getLogger(ProducerDemoWithCallback.class);
 
-    public static void main(String[] args) throws IOException {
-        ApplicationPropertiesUtils applicationPropertiesUtils = new ApplicationPropertiesUtils();
-        Properties properties = applicationPropertiesUtils.getProperties();
+    private final ApplicationPropertiesUtils applicationPropertiesUtils;
 
-        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
-        ProducerRecord<String, String> record =
-                new ProducerRecord<String, String>(properties.getProperty("app.topic"), "hello world");
+    private final Properties properties;
 
+    private final SiteAccessInfoReader siteAccessInfoReader;
+
+    private final KafkaProducer<String, String> producer;
+
+    public ProducerDemoWithCallback() throws IOException {
+        this.applicationPropertiesUtils = new ApplicationPropertiesUtils();
+        this.properties = applicationPropertiesUtils.getProperties();
+        this.siteAccessInfoReader = new SiteAccessInfoReader(properties);
+        this.producer = new KafkaProducer<String, String>(properties);
+    }
+
+    public void produceDataFromFile() throws IOException {
+        siteAccessInfoReader
+                .getDataAsStream()
+                .forEach(this::produceData);
+        producer.flush();
+    }
+
+    private void produceData(String data) {
+        ProducerRecord<String, String> record = new ProducerRecord<String, String>(properties.getProperty("app.topic"), data);
         producer.send(record, new Callback() {
             public void onCompletion(RecordMetadata recordMetadata, Exception e) {
                 if (e == null) {
@@ -39,8 +56,10 @@ public class ProducerDemoWithCallback {
                 }
             }
         });
-        producer.close();
     }
 
-
+    public static void main(String[] args) throws IOException {
+        ProducerDemoWithCallback producerDemoWithCallback = new ProducerDemoWithCallback();
+        producerDemoWithCallback.produceDataFromFile();
+    }
 }
