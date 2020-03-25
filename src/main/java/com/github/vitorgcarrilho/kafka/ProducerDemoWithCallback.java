@@ -46,14 +46,12 @@ public class ProducerDemoWithCallback {
 
     private void produceData(String data) {
         ProducerRecord<String, String> record = new ProducerRecord<String, String>(properties.getProperty("app.topic"), data);
-        producer.send(record, new Callback() {
-            public void onCompletion(RecordMetadata recordMetadata, Exception e) {
-                if (e == null) {
-                    logger.info("Received new metadata: topic={} partition={} offset={} timestamp={}"
-                            , recordMetadata.topic(), recordMetadata.partition(), recordMetadata.offset(), recordMetadata.timestamp());
-                } else {
-                    logger.error("Error while producing", e);
-                }
+        producer.send(record, (recordMetadata, e) -> {
+            if (e == null) {
+                logger.info("Received new metadata: topic={} partition={} offset={} timestamp={}"
+                        , recordMetadata.topic(), recordMetadata.partition(), recordMetadata.offset(), recordMetadata.timestamp());
+            } else {
+                logger.error("Error while producing", e);
             }
         });
     }

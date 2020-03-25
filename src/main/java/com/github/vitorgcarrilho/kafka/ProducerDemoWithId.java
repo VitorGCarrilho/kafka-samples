@@ -49,14 +49,12 @@ public class ProducerDemoWithId {
 
         // When you provide a key, you guarantee that all messages with the same key is going to the same partition
         ProducerRecord<String, String> record = new ProducerRecord<String, String>(properties.getProperty("app.topic"), key, data);
-        producer.send(record, new Callback() {
-            public void onCompletion(RecordMetadata recordMetadata, Exception e) {
-                if (e == null) {
-                    logger.info("Received new metadata: topic={} partition={} offset={} timestamp={}"
-                            , recordMetadata.topic(), recordMetadata.partition(), recordMetadata.offset(), recordMetadata.timestamp());
-                } else {
-                    logger.error("Error while producing", e);
-                }
+        producer.send(record, (recordMetadata, e) -> {
+            if (e == null) {
+                logger.info("Received new metadata: topic={} partition={} offset={} timestamp={}"
+                        , recordMetadata.topic(), recordMetadata.partition(), recordMetadata.offset(), recordMetadata.timestamp());
+            } else {
+                logger.error("Error while producing", e);
             }
         });
     }
